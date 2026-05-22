@@ -2,63 +2,82 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
-// class LibraryController extends Controller
-// {
-//     public function bookrecords(){
-//         return view('library.bookrecords');
-//     }
-// }
-
+use App\Http\Requests\StoreBookRequest;
 use App\Models\LibraryBook;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class LibraryController extends Controller
 {
-    public function allBooks() {
-        $books = LibraryBook::all();
+    public function allBooks(): View
+    {
+        $books = LibraryBook::paginate(10);
+
         return view('books.all_books', ['books' => $books]);
     }
 
-    public function availableBooks() {
-        $books = LibraryBook::all(); // Fetch all books without filtering
-        return view('/books/available', ['books' => $books]);
+    public function availableBooks(): View
+    {
+        $books = LibraryBook::where('is_available', true)->paginate(10);
+
+        return view('books.available', ['books' => $books]);
     }
 
-    public function fictionBooks() {
-        $books = LibraryBook::where('genre', 'Fiction')->get();
-        return view('books.fiction', ['books' => $books]);
-    }   
+    public function fictionBooks(): View
+    {
+        $books = LibraryBook::where('genre', 'Fiction')->paginate(10);
 
-    public function nonFictionBooks() {
-        $books = LibraryBook::where('genre', 'Non-Fiction')->get();
-        return view('books.nonfiction', ['books' => $books]);
+        return view('books.genre', ['books' => $books, 'genre' => 'Fiction']);
     }
 
-    public function addBook(Request $request) {
-        $book = new LibraryBook();
-        $book->title = $request->title;
-        $book->author = $request->author;
-        $book->genre = $request->genre;
-        $book->isbn = $request->isbn;
-        $book->publication_year = $request->publication_year;
-        $book->publisher = $request->publisher;
-        $book->pages = $request->pages;
-        $book->shelf_location = $request->shelf_location;
-        $book->available_copies = $request->available_copies;
-        $book->is_available = $request->is_available;
-        $book->save();
+    public function nonFictionBooks(): View
+    {
+        $books = LibraryBook::where('genre', 'Non-Fiction')->paginate(10);
 
-        return redirect('/all/books');
+        return view('books.genre', ['books' => $books, 'genre' => 'Non-Fiction']);
+    }
+
+    public function search(Request $request): View
+    {
+        $q = str_replace(['%', '_'], ['\\%', '\\_'], $request->input('q', ''));
+
+        $books = LibraryBook::where('title', 'like', "%{$q}%")
+            ->orWhere('author', 'like', "%{$q}%")
+            ->orWhere('isbn', 'like', "%{$q}%")
+            ->paginate(10)
+            ->appends(['q' => $q]);
+
+        return view('books.all_books', ['books' => $books]);
+    }
+
+    public function editBook(int $id): View
+    {
+        $book = LibraryBook::findOrFail($id);
+
+        return view('books.edit', ['book' => $book]);
+    }
+
+    public function updateBook(StoreBookRequest $request, int $id): RedirectResponse
+    {
+        $book = LibraryBook::findOrFail($id);
+        $book->update($request->validated());
+
+        return redirect('/all/books')->with('success', 'Book updated successfully!');
+    }
+
+    public function deleteBook(int $id): RedirectResponse
+    {
+        $book = LibraryBook::findOrFail($id);
+        $book->delete();
+
+        return redirect('/all/books')->with('success', 'Book deleted successfully!');
+    }
+
+    public function addBook(StoreBookRequest $request): RedirectResponse
+    {
+        LibraryBook::create($request->validated());
+
+        return redirect('/all/books')->with('success', 'Book added successfully!');
     }
 }
-
-//form route 
-
-//route for form to post to
-
-//route go call controller function
-
-//controller function insert data jol Database
-
-//redirect to page jas

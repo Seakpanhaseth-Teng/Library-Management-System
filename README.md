@@ -1,33 +1,40 @@
-# 📚 Library Management System
+# Library Management System
 
 A web-based library management system built with **Laravel 12** and **Blade Templates**, designed to help librarians manage book collections, track availability, and organize inventory efficiently.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | Backend | Laravel 12 (PHP 8.2+) |
 | ORM | Eloquent |
 | Database | SQLite (default), MySQL, or PostgreSQL |
-| Frontend | Blade Templates, Tailwind CSS 4.0, Bootstrap 5.3 |
-| Build Tool | Vite 6.2.4 |
-| Testing | PHPUnit 11.5.3 |
+| Frontend | Blade Templates, Bootstrap 5.3 |
+| Build Tool | Vite 6 |
+| Testing | PHPUnit 11 |
 
 ---
 
-## ✨ Features
+## Features
 
+- **Email/Password Authentication** — Register, login, and logout
+- **Email Verification** — One-time email verification on registration
+- **Password Reset** — Forgot password flow with email reset link
+- **Rate Limiting** — Login throttled (5 attempts), registration throttled (3 attempts)
 - **View All Books** — Browse the complete library inventory in a table layout
 - **Filter by Genre** — Quickly find Fiction or Non-Fiction titles
 - **Availability Tracking** — See which books are ready to borrow
 - **Add New Books** — Create book records with full metadata
+- **Edit & Delete Books** — Update or remove book records
+- **Search** — Find books by title, author, or ISBN
 - **Detailed Book Info** — Title, Author, ISBN, Genre, Year, Publisher, Pages, Shelf Location, and Copy Count
+- **Pagination** — All book listings are paginated
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -66,95 +73,155 @@ Visit `http://127.0.0.1:8000` to access the app.
 
 ---
 
-## 📖 Usage
+## Usage
 
 | Page | URL |
 |------|-----|
 | Home | `/` |
+| Login | `/login` |
+| Register | `/register` |
+| Forgot Password | `/forgot-password` |
 | All Books | `/all/books` |
 | Available Books | `/books/available` |
 | Fiction | `/books/fiction` |
 | Non-Fiction | `/books/nonfiction` |
 | Add a Book | `/createbook` |
 
-To add a book, navigate to `/createbook`, fill in the details, and click **Submit**. You'll be redirected to the full book list on save.
+Book pages require authentication. Register an account, verify your email, then browse the collection.
 
 ---
 
-## 🌐 Routes
+## Routes
 
-| Method | Route | Controller Method | Description |
-|--------|-------|-------------------|-------------|
-| GET | `/` | — | Welcome page |
-| GET | `/all/books` | `LibraryController@allBooks` | All books |
-| GET | `/books/available` | `LibraryController@availableBooks` | Available books |
-| GET | `/books/fiction` | `LibraryController@fictionBooks` | Fiction books |
-| GET | `/books/nonfiction` | `LibraryController@nonFictionBooks` | Non-fiction books |
-| GET | `/createbook` | — | Book creation form |
-| POST | `/books/add` | `LibraryController@addBook` | Save new book |
+| Method | Route | Middleware | Controller | Description |
+|--------|-------|-----------|------------|-------------|
+| GET | `/` | — | — | Welcome page |
+| GET | `/login` | `guest` | `LoginController@showLoginForm` | Login form |
+| POST | `/login` | `guest` | `LoginController@login` | Log in |
+| GET | `/register` | `guest` | `RegisterController@showRegistrationForm` | Register form |
+| POST | `/register` | `guest` | `RegisterController@register` | Register |
+| GET | `/forgot-password` | `guest` | `PasswordResetLinkController@create` | Forgot password form |
+| POST | `/forgot-password` | `guest` | `PasswordResetLinkController@store` | Send reset link |
+| GET | `/reset-password/{token}` | `guest` | `NewPasswordController@create` | Reset password form |
+| POST | `/reset-password` | `guest` | `NewPasswordController@store` | Reset password |
+| GET | `/verify-email` | `auth` | `EmailVerificationPromptController` | Verification notice |
+| GET | `/verify-email/{id}/{hash}` | `auth,signed` | `VerifyEmailController` | Verify email |
+| POST | `/email/verification-notification` | `auth,throttle` | `EmailVerificationNotificationController@store` | Resend verification |
+| POST | `/logout` | `auth` | `LogoutController@logout` | Log out |
+| GET | `/all/books` | `auth` | `LibraryController@allBooks` | All books (paginated) |
+| GET | `/books/search` | `auth` | `LibraryController@search` | Search books |
+| GET | `/books/available` | `auth` | `LibraryController@availableBooks` | Available books |
+| GET | `/books/fiction` | `auth` | `LibraryController@fictionBooks` | Fiction books |
+| GET | `/books/nonfiction` | `auth` | `LibraryController@nonFictionBooks` | Non-fiction books |
+| GET | `/books/{id}/edit` | `auth` | `LibraryController@editBook` | Edit book form |
+| PUT | `/books/{id}` | `auth` | `LibraryController@updateBook` | Update book |
+| DELETE | `/books/{id}` | `auth` | `LibraryController@deleteBook` | Delete book |
+| GET | `/createbook` | `auth` | — | Book creation form |
+| POST | `/books/add` | `auth` | `LibraryController@addBook` | Save new book |
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
-**Table: `library_books`**
+### Table: `users`
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `id` | INT (PK) | Unique identifier |
-| `title` | VARCHAR | Book title |
-| `author` | VARCHAR | Author name |
-| `genre` | VARCHAR | Fiction / Non-Fiction |
-| `isbn` | VARCHAR | ISBN number |
-| `publication_year` | INT | Year published |
-| `publisher` | VARCHAR | Publisher name |
-| `pages` | INT | Page count |
-| `shelf_location` | VARCHAR | Physical location |
-| `available_copies` | INT | Copies available |
-| `is_available` | BOOLEAN | Availability status |
+| `id` | BIGINT (PK) | Unique identifier |
+| `name` | VARCHAR(255) | Full name |
+| `email` | VARCHAR(255) | Email address (unique) |
+| `email_verified_at` | TIMESTAMP | Email verification timestamp |
+| `password` | VARCHAR(255) | Hashed password |
+| `remember_token` | VARCHAR(100) | Remember me token |
+| `created_at` | TIMESTAMP | Record created |
+| `updated_at` | TIMESTAMP | Record last updated |
+
+### Table: `library_books`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | BIGINT (PK) | Unique identifier |
+| `title` | VARCHAR(255) | Book title |
+| `author` | VARCHAR(255) | Author name |
+| `genre` | VARCHAR(100) | Genre (Fiction / Non-Fiction) |
+| `isbn` | VARCHAR(20) | ISBN number |
+| `publication_year` | INTEGER | Year published |
+| `publisher` | VARCHAR(255) | Publisher name |
+| `pages` | INTEGER | Page count |
+| `shelf_location` | VARCHAR(50) | Physical location |
+| `available_copies` | INTEGER | Copies available |
+| `is_available` | TINYINT(1) | Availability status (0/1) |
 | `created_at` | TIMESTAMP | Record created |
 | `updated_at` | TIMESTAMP | Record last updated |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 library-management/
 ├── app/
-│   ├── Http/Controllers/
-│   │   ├── LibraryController.php   # Core book management
-│   │   └── BookController.php
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Auth/
+│   │   │   │   ├── EmailVerificationNotificationController.php
+│   │   │   │   ├── EmailVerificationPromptController.php
+│   │   │   │   ├── LoginController.php
+│   │   │   │   ├── LogoutController.php
+│   │   │   │   ├── NewPasswordController.php
+│   │   │   │   ├── PasswordResetLinkController.php
+│   │   │   │   ├── RegisterController.php
+│   │   │   │   └── VerifyEmailController.php
+│   │   │   ├── Controller.php
+│   │   │   └── LibraryController.php
+│   │   └── Requests/
+│   │       ├── Auth/
+│   │       │   ├── LoginRequest.php
+│   │       │   └── RegisterRequest.php
+│   │       └── StoreBookRequest.php
 │   └── Models/
 │       ├── LibraryBook.php
-│       ├── Book.php
 │       └── User.php
+├── config/
+│   └── ...
 ├── database/
+│   ├── factories/
 │   ├── migrations/
-│   ├── seeders/
-│   └── factories/
+│   └── seeders/
 ├── resources/
-│   ├── views/
-│   │   ├── books/
-│   │   │   ├── all_books.blade.php
-│   │   │   ├── available.blade.php
-│   │   │   ├── fiction.blade.php
-│   │   │   ├── nonfiction.blade.php
-│   │   │   └── createbook.blade.php
-│   │   └── welcome.blade.php
-│   ├── css/app.css
-│   └── js/
+│   └── views/
+│       ├── auth/
+│       │   ├── forgot-password.blade.php
+│       │   ├── login.blade.php
+│       │   ├── register.blade.php
+│       │   ├── reset-password.blade.php
+│       │   └── verify-email.blade.php
+│       ├── books/
+│       │   ├── _form.blade.php
+│       │   ├── all_books.blade.php
+│       │   ├── available.blade.php
+│       │   ├── create_book.blade.php
+│       │   ├── edit.blade.php
+│       │   └── genre.blade.php
+│       ├── emails/
+│       │   └── password-reset.blade.php
+│       ├── layouts/
+│       │   └── app.blade.php
+│       └── welcome.blade.php
 ├── routes/
 │   ├── web.php
 │   └── console.php
 └── tests/
     ├── Feature/
+    │   ├── AuthTest.php
+    │   └── ExampleTest.php
     └── Unit/
+        └── ExampleTest.php
 ```
 
 ---
 
-## 🧑‍💻 Development
+## Development
 
 ```bash
 # Hot reload for frontend development
@@ -172,7 +239,7 @@ php artisan pint
 
 ---
 
-## 📦 Key Dependencies
+## Key Dependencies
 
 **Backend**
 - `laravel/framework` ^12.0
@@ -190,36 +257,26 @@ php artisan pint
 
 ---
 
-## 🔐 Security Notes
+## Security Notes
 
 - Never commit `.env` to version control
 - Use strong database credentials in production
 - Enable HTTPS in production
 - Validate and sanitize all user inputs
-- Leverage Laravel's built-in CSRF protection
+- Leverage Laravel's built-in CSRF protection and rate limiting
 
 ---
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'Add your feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request
-
----
-
-## 📄 License
+## License
 
 Licensed under the [MIT License](LICENSE).
 
 ---
 
-## 🎓 Resources
+## Resources
 
 - [Laravel Documentation](https://laravel.com/docs)
 - [Blade Templates](https://laravel.com/docs/blade)
-- [Tailwind CSS](https://tailwindcss.com/docs)
+- [Bootstrap 5](https://getbootstrap.com/docs/5.3)
 - [Vite](https://vitejs.dev/guide/)
 - [Eloquent ORM](https://laravel.com/docs/eloquent)
