@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBookRequest;
 use App\Models\LibraryBook;
+use App\Services\OpenLibraryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class LibraryController extends Controller
@@ -51,6 +53,13 @@ class LibraryController extends Controller
         return view('books.all_books', ['books' => $books]);
     }
 
+    public function show(int $id): View
+    {
+        $book = LibraryBook::findOrFail($id);
+
+        return view('books.show', ['book' => $book]);
+    }
+
     public function editBook(int $id): View
     {
         $book = LibraryBook::findOrFail($id);
@@ -61,7 +70,16 @@ class LibraryController extends Controller
     public function updateBook(StoreBookRequest $request, int $id): RedirectResponse
     {
         $book = LibraryBook::findOrFail($id);
-        $book->update($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('cover_image')) {
+            if ($book->cover_image) {
+                Storage::disk('public')->delete($book->cover_image);
+            }
+            $data['cover_image'] = $request->file('cover_image')->store('covers', 'public');
+        }
+
+        $book->update($data);
 
         return redirect('/all/books')->with('success', 'Book updated successfully!');
     }
@@ -69,6 +87,11 @@ class LibraryController extends Controller
     public function deleteBook(int $id): RedirectResponse
     {
         $book = LibraryBook::findOrFail($id);
+
+        if ($book->cover_image) {
+            Storage::disk('public')->delete($book->cover_image);
+        }
+
         $book->delete();
 
         return redirect('/all/books')->with('success', 'Book deleted successfully!');
@@ -76,7 +99,19 @@ class LibraryController extends Controller
 
     public function addBook(StoreBookRequest $request): RedirectResponse
     {
-        LibraryBook::create($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('cover_image')) {
+            $data['cover_image'] = $request->file('cover_image')->store('covers', 'public');
+        } else {
+            $openLibrary = app(OpenLibraryService::class);
+            $coverPath = $openLibrary->fetchCoverByIsbn($data['isbn']);
+            if ($coverPath) {
+                $data['cover_image'] = $coverPath;
+            }
+        }
+
+        LibraryBook::create($data);
 
         return redirect('/all/books')->with('success', 'Book added successfully!');
     }

@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StoreBookRequest extends FormRequest
 {
@@ -25,6 +24,7 @@ class StoreBookRequest extends FormRequest
             'shelf_location' => 'required|string|max:50',
             'available_copies' => 'required|integer|min:0',
             'is_available' => 'required|boolean',
+            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ];
     }
 }

@@ -234,7 +234,7 @@ class AuthTest extends TestCase
 
         $response = $this->actingAs($user)->get('/all/books');
 
-        $response->assertSee('Please verify your email');
+        $response->assertSee('Email not verified.');
     }
 
     public function test_verify_email_banner_hidden_for_verified_user(): void

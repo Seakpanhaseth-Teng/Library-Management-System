@@ -1,44 +1,47 @@
-@extends('layouts.app')
+@extends('layouts.guest')
 
 @section('title', 'Reset Password')
 
 @section('content')
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <h1 class="text-center mb-4">Reset Password</h1>
+<h1 class="text-2xl font-bold text-gray-900 text-center mb-6">Reset Password</h1>
+<p class="text-sm text-gray-500 text-center mb-8">Choose a new password for your account</p>
 
-            <form action="{{ route('password.update') }}" method="POST" class="border p-4 rounded bg-light">
-                @csrf
+<form action="{{ route('password.update') }}" method="POST" class="space-y-5">
+    @csrf
 
-                <input type="hidden" name="token" value="{{ request()->route('token') }}">
+    <input type="hidden" name="token" value="{{ request()->route('token') }}">
 
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', request()->email) }}" required autofocus>
-                    @error('email')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="mb-3">
-                    <label for="password" class="form-label">New Password</label>
-                    <input type="password" id="password" name="password" class="form-control @error('password') is-invalid @enderror" required>
-                    @error('password')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="mb-3">
-                    <label for="password_confirmation" class="form-label">Confirm New Password</label>
-                    <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" required>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100">Reset Password</button>
-            </form>
-
-            <p class="text-center mt-3">
-                <a href="{{ route('login') }}">Back to Login</a>
-            </p>
-        </div>
+    <div>
+        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input type="email" id="email" name="email"
+               value="{{ old('email', request()->email) }}" required autofocus
+               class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 @error('email') border-red-300 @enderror"
+               placeholder="you@example.com">
+        @error('email')
+            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+        @enderror
     </div>
+
+    <div>
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+        <input type="password" id="password" name="password" required
+               class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 @error('password') border-red-300 @enderror"
+               placeholder="••••••••">
+        @error('password')
+            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div>
+        <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+        <input type="password" id="password_confirmation" name="password_confirmation" required
+               class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+               placeholder="••••••••">
+    </div>
+
+    <button type="submit"
+            class="w-full px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+        Reset Password
+    </button>
+</form>
 @endsection
